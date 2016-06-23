@@ -9,8 +9,8 @@ import java.util.List;
  * It will demonstrate basic knowledge about how BST work
  * and some of their methods, because of the simplicity
  * added elements in a random order are very likely to 
- * create an unbalanced tree. A workaround is to use a
- * sorting algorithm before creating the tree. */
+ * create an unbalanced tree. */
+ 
 public class BST {
 	
 	public static ObjectNode root;	//root variable
@@ -20,14 +20,13 @@ public class BST {
 		this.root = null;
 	}//end empty constructor
 	
-	/*Method for finding a password in the BST
-	 * [ADD] Hash table if you plan to do a BST of Values instead*/
+	/*Method for finding a password in the BST */
 	public boolean find(Password pass){
 		ObjectNode current = root;
 		while(current!= null){
 			if(current.data.pwd.equals(pass.pwd)){
-				System.out.println("Found in Dictionary!\nYour Hidden Password "+
-						"is: "+pass.pwd);
+	//			System.out.println("Found in Dictionary!\nYour Hidden Password "+
+	//					"is: "+pass.pwd);
 				return true;
 			}else if (current.data.pwd.compareTo(pass.pwd) > 0)
 				current = current.left;
