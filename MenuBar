@@ -1,0 +1,501 @@
+package gui_for_final;
+
+
+import javax.swing.*;
+import javax.swing.border.Border;
+
+import java.awt.*;
+import java.awt.event.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+public class MenuBar extends JFrame implements ActionListener {
+	
+	/**Menu Items */
+	//File
+	private JMenuItem item1 = new JMenuItem("Open");
+	private JMenuItem item2 = new JMenuItem("Save");	//saves memory to dictionary file
+	private JMenuItem item3 = new JMenuItem("Close");
+	//Settings
+	private JMenuItem item5 = new JMenuItem("Binary Search Tree"); 
+	private JMenuItem item6 = new JMenuItem("Hash Table"); 
+	//View
+	private JMenuItem item7 = new JMenuItem("Brute Force Window");
+		
+	//Text Fields
+	private JTextField field1 = new JTextField(12);	//size 12
+	
+	//Borders
+	private Border border1 = BorderFactory.createLineBorder(Color.BLACK);
+	private Border borderRed = BorderFactory.createLineBorder(Color.RED);
+	
+	//Labels
+	private JLabel label1 = new JLabel("Enter Password");
+	private JLabel label2 = new JLabel("Selected Dictionary: "+currentDictionaryPath);
+	private JLabel label3 = new JLabel("Selected Data Storage: "+storageTypeName);
+	
+	
+	//JButtons
+	private JButton button1 = new JButton("Accept");
+	private JButton button2 = new JButton("Clear");
+	private JButton button3 = new JButton("Show Dictionary"); //Show a Dictionary in a new Window [Enabled] 
+	private JButton button4 = new JButton("Show Memory");
+	private JButton button5 = new JButton("Validate");  //Check for a valid input
+	
+	//JFrame2
+	private JFrame BF = new JFrame();
+	
+	//Global Variables
+	static List<String> DYNAMIC_SIM = new ArrayList<>(); //Dynamic Save-in-Memory
+	static String currentDictionaryPath = "None";			//Full path *mainly for debugging
+	static String[] CURRENT_DICTIONARY;				//Array of strings containing passwords
+	static InstanceInitializer init;		//initialize the initializer
+	static Password[] PASSWORD_ARRAY;		//Array of Password containing passwords 
+	static String storageTypeName = "Default";
+	static int STORAGE_TYPE = -1; // 0 = BST. 1 = HashTable.  -1 = Error
+	static boolean INPUT_READY = false; //
+	
+	/** Main Method */
+	public static void main(String args[]){
+	
+		new MenuBar();
+		
+	  }//end main
+		
+		
+	/** GUI Methods
+	
+	/* Menu Bar
+	 * This method hold the instance for all methods in program */
+	public MenuBar(){
+		//Declare JFrame here
+		JFrame F = new JFrame("Password Cracker 2.0");	
+		//JFrame BF = new JFrame("Password Cracker 2.0");
+		
+		//Menu Bar
+		JMenuBar menubar = new JMenuBar();
+		JMenu menu1 = new JMenu("File");
+		JMenu menu2 = new JMenu("Settings");
+		JMenu menu3 = new JMenu("Help");
+		JMenu menu4 = new JMenu("View");
+		//Menu Bar sub-menus
+		JMenu submenu = new JMenu("Storage Data Structure");
+		
+		//Actions for Menu Bar items
+		item1.addActionListener(this); //open
+		item2.addActionListener(this); //save
+		item3.addActionListener(this); //close
+		item5.addActionListener(this); //BST
+		item6.addActionListener(this); //Hash Table
+		//item7.addActionListener(this); //BruteForce [Disabled]
+		
+		//Menu Bar 
+		menubar.add(menu1);	//file
+		menubar.add(menu4); //view
+		menubar.add(menu2);	//settings
+		menubar.add(menu3);	//help
+		
+		//Add to File Menu
+		menu1.add(item1);	//open
+		menu1.add(item2);	//Save, which creates a new tree including memory items
+		menu1.add(item3);	//close
+		
+		//Add to Settings Menu
+		submenu.add(item5); //Binary Search Tree
+		submenu.add(item6);	//Hash Table
+		menu2.add(submenu);	//Sub-menu Storage type
+		
+		//Add to View
+		//menu4.add(item7); //Brute Force [Disabled]
+		
+		//JPANEL and layout
+		JPanel P = new JPanel();		
+		P.setLayout(new FlowLayout(FlowLayout.CENTER,20,10));
+		P.add(label1);	//password
+		
+		//Input Text
+		field1.setBorder(border1);
+		field1.setToolTipText("Only lowercase letters");
+		P.add(field1);	//field for password
+		P.add(button5); //validate
+		P.add(button1);	//Accept
+		button1.setEnabled(false);
+		
+		//information 
+		P.add(label2);	//dictionary
+		P.add(label3);	//storage type
+		
+		//JPANEL for buttons
+		JPanel P1 = new JPanel();
+		P1.setLayout(new FlowLayout());
+		P1.add(button3); //Show Dictionary
+		P1.add(button4); //Show Memory
+		P1.add(button2); //Clear button
+		
+		//Listeners
+		button1.addActionListener(this);	//Action Accept
+		button2.addActionListener(this);	//Action Clear
+		button3.addActionListener(this); 	//Action Show Dictionary
+		button4.addActionListener(this); 	//Action Show Memory
+		button5.addActionListener(this); 	//Action Validate
+		
+		//ADD JPanels into JFrame
+		F.add(P, BorderLayout.CENTER);	//First row
+		F.add(P1, BorderLayout.SOUTH);	//change 
+		
+		//Set MenuBar
+		F.setJMenuBar(menubar);		
+		
+		//Size and Visibility
+		F.setSize(500,200);
+		F.setVisible(true);
+		
+		/** Brute Force Window */ 
+		//For simplicity of the program I will declare everything for BF window here
+		//JLabel label01 = new JLabel(""); [Disabled]
+		
+		JPanel P2 = new JPanel();		
+		P2.setLayout(new FlowLayout(FlowLayout.CENTER,20,10));
+		BF.add(P2, BorderLayout.CENTER);
+		
+		BF.setSize(500, 200);
+		BF.setVisible(false);
+		
+		//JOptionPane.showMessageDialog(null, "Welcome, first step is to load a dictionary");
+	}//end menu bar
+
+
+
+	public void actionPerformed(ActionEvent E) {
+		/**Menu Bar Items */
+		
+		//File items
+		if(E.getSource() == item1){	//open a dictionary
+			try {
+				openDictionaryFile();
+				String smallPath = currentDictionaryPath;
+				smallPath = smallPath.substring(smallPath.lastIndexOf("\\")+1);
+				label2.setText("Selected Dictionary: "+smallPath);
+				
+				if(STORAGE_TYPE == -1){ //Initialize default storage type
+					initBST();
+				}//end if 
+				
+			} catch (IOException e) {e.printStackTrace();} //catch
+		}//end item 1
+		if(E.getSource() == item2){		//[Enabled] SAVE
+			if (DYNAMIC_SIM.isEmpty()){ //nothing on memory
+				JOptionPane.showMessageDialog(null, "Nothing on memory to save", "Empty Warning", JOptionPane.WARNING_MESSAGE);
+			}else{
+				JOptionPane.showMessageDialog(null, "Saved Memory to Dictionary file");
+				try {
+					writeMemoryToDict();		//Method to write memory to file
+					refreshDictionaryFile();	//Refresh program invoking new instances
+					if(STORAGE_TYPE == 0){ 	//refresh Binary Search Tree
+						initBST();
+					}
+					if(STORAGE_TYPE == 1){ //refresh hash table
+						initHashTable();
+					}
+				}//end try 
+				catch (IOException e) {e.printStackTrace();}
+				DYNAMIC_SIM.clear();
+				INPUT_READY = false;
+				field1.setEditable(true);
+				field1.setText(null);
+				button5.setEnabled(true);
+			}//end else
+		}//end save
+		if(E.getSource() == item3){	//Close 
+			try {writeMemoryToDict(); System.exit(0);} 
+			catch (IOException e) {e.printStackTrace();}
+		}//end close
+		//end file items
+		
+		//Setting items
+		if(E.getSource() == item5){ //BST
+			if(STORAGE_TYPE == 0){
+				JOptionPane.showMessageDialog(null, "Data Structure already BST");
+			}
+			else{
+				initBST();
+			}
+		}
+		if(E.getSource() == item6){ //HashTable
+			if(STORAGE_TYPE == 1){
+				JOptionPane.showMessageDialog(null, "Data Structure already HashTable");
+			}
+			else{
+				initHashTable();
+			}
+		}
+		
+		//View items
+		//if(E.getSource() == item7){ //Brute Force Window
+			
+			//this.setVisible(false);
+			//this.dispose();
+
+			//BF.setVisible(true);
+		//}
+		
+		//Buttons
+		if(E.getSource() == button5){//Validate
+			field1.setBorder(border1); //black border
+			String test = field1.getText();
+			if (test.equals("") || containsIllegals(test)) {
+				JOptionPane.showMessageDialog(null, "Invalid characters\nUse letters only!");
+				field1.setBorder(borderRed);
+				field1.selectAll();
+				field1.setSelectedTextColor(Color.RED);
+			} // end if
+			else {
+				field1.setText(test.toLowerCase()); //Eliminates upper case
+				field1.setEditable(false);
+				button5.setEnabled(false);
+				INPUT_READY = true;
+				button1.setEnabled(true);
+			}
+		}
+		
+		//Accept but forgot to open dictionary
+		if(E.getSource() == button1 && INPUT_READY==true && currentDictionaryPath.equals("None")) 
+			JOptionPane.showMessageDialog(null, "Don't forget to add a Dictionary on File Tab");
+		
+		//Accept Button
+		if(E.getSource() == button1 && INPUT_READY == true && !currentDictionaryPath.equals("None")){ 
+			String userString = field1.getText();
+			Password userPassword = new Password(userString, init.getPasswordValue(userString));
+			String hidePass = stringToSelectedChar(userString.length(), '*');
+			field1.setText(hidePass);
+			field1.setEditable(false); 
+			button1.setEnabled(false);
+			
+			//USING BST
+			if (STORAGE_TYPE == 0) {
+				long startTime = System.nanoTime();
+				boolean found = init.T.find(userPassword); // find BST operation
+				if (found) { // found
+					long foundTime = System.nanoTime() - startTime;
+					JOptionPane.showMessageDialog(null, "Searching Dictionary for\n" + hidePass + "\n\n"
+							+ "FOUND IN DICTIONARY (BST)\nProcess Took: " + (foundTime) + " nanoseconds");
+				} else { // not found
+					if (DSIM(userPassword)) { // found in memory
+						long memoryTime = System.nanoTime() - startTime;
+						JOptionPane.showMessageDialog(null, "Searching Dictionary for \n" + hidePass + "\n\n"
+								+ "NOT FOUND IN DICTIONARY (BST)\nFOUND! IN MEMORY\nProcess Took: "+(memoryTime)+ " nanoseconds");
+					} else {
+						long notFoundTime = System.nanoTime() - startTime;
+						JOptionPane.showMessageDialog(null, "Searching Dictionary for \n" + hidePass + "\n\n" + "NOT FOUND IN DICTIONARY (BST)"
+								+"\nNOT FOUND IN MEMORY\nProcess Took: "+ (notFoundTime)+" nanoseconds\n\nAdding new password to memory...");
+					} // end else
+				} // end else
+			}//end BST Storage Type
+			
+			//Using Hash Tables
+			if(STORAGE_TYPE == 1){
+				long startTime = System.nanoTime();
+				int index = userPassword.value % init.H.SIZE;
+				boolean found = init.H.find(userPassword, index); // find HashTable operation
+	
+				if(found){	//if found in hash table
+					long foundTime = System.nanoTime() - startTime;
+					JOptionPane.showMessageDialog(null, "Searching Dictionary for\n" + hidePass + "\n\n"
+							+ "FOUND IN DICTIONARY (HASHTABLE) at index: ["+index+"]\nProcess Took: " + (foundTime) + " nanoseconds");
+				} else{	//Dynamic SIM TEST
+					if (DSIM(userPassword)) { // found in memory
+						long memoryTime = System.nanoTime() - startTime;
+						JOptionPane.showMessageDialog(null, "Searching Dictionary for \n" + hidePass + "\n\n"
+								+ "NOT FOUND IN DICTIONARY (HASHTABLE)\nFOUND! IN MEMORY\nProcess Took: "+(memoryTime)+ " nanoseconds");
+					} else {
+						long notFoundTime = System.nanoTime() - startTime;
+						JOptionPane.showMessageDialog(null, "Searching Dictionary for \n" + hidePass + "\n\n" + "NOT FOUND IN DICTIONARY (HASHTABLE)"
+								+"\nNOT FOUND IN MEMORY\nProcess Took: "+ (notFoundTime)+" nanoseconds\n\nAdding new password to memory...");
+					} // end else
+				}//end else
+			}
+			
+			
+	
+			
+		}//end Accept
+		if(E.getSource() == button2){ //Clear
+			INPUT_READY = false;
+			field1.setEditable(true);
+			field1.setText(null);
+			button5.setEnabled(true);
+		}
+		if(E.getSource() == button3){ //Show Dictionary
+			scrollableOutput(CURRENT_DICTIONARY, null);
+		}
+		if(E.getSource() == button4){ //Show Memory
+			if (DYNAMIC_SIM.isEmpty()) //nothing on memory
+				JOptionPane.showMessageDialog(null, "Empty Memory");
+			else
+				scrollableOutput(null, DYNAMIC_SIM);
+		}//end show memory 
+		
+		
+	}//end actionPerformed
+	
+	/* Method for changing a dictionary */
+	public JFileChooser openDictionaryFile() throws IOException {
+		JFileChooser chooser = new JFileChooser();
+		File F = new File("C:/Users/xerg/workspace/gui_for_final"); //Directory Path change '\' to '/'
+		chooser.setCurrentDirectory(F);	//set parent directory 
+		chooser.setDialogTitle("Choose a Diccionary");	//Change title of file chooser
+		
+		int x = chooser.showOpenDialog(null);	//open a window to choose a dictionary file
+		if (x == JFileChooser.CANCEL_OPTION){	//cannot cancel
+			JOptionPane.showMessageDialog(null, "Must Select a Dictionary", "Warning", JOptionPane.WARNING_MESSAGE);
+			openDictionaryFile();  //try again
+		}
+		else{
+			loadDictionaryFile(chooser);	//load the file into the program as a String array
+		}
+		return chooser;
+	}//end openDictionaryFile
+	
+	/* Method for refreshing current dictionary file */
+	public void refreshDictionaryFile() throws IOException{
+		JFileChooser chooser = new JFileChooser();
+		File F = new File (currentDictionaryPath);
+		chooser.setSelectedFile(F);
+		loadDictionaryFile(chooser);
+	}
+
+	/* Method for creating a String array from file */
+	public void loadDictionaryFile(JFileChooser dictFile) throws IOException{
+		currentDictionaryPath = dictFile.getSelectedFile().toString();
+		BufferedReader in = new BufferedReader(new FileReader(currentDictionaryPath));
+		String pwd;
+		List<String> listOfPasswords = new ArrayList<String>();
+		while((pwd = in.readLine()) != null){
+			listOfPasswords.add(pwd);
+		}
+		//in.close();
+		String[] strArrayOfPasswords = listOfPasswords.toArray(new String[0]);
+		CURRENT_DICTIONARY = strArrayOfPasswords;	//Update Current Dictionary
+	}//end getStringArray
+	
+	/** Storage Data Structures Related Methods */
+	
+	/* Method that creates a BST from current dictionary */
+	public void initBST(){
+		init = new InstanceInitializer();	//create a new Initializer
+		PASSWORD_ARRAY = init.stringToPassword(CURRENT_DICTIONARY);
+		init.createStorageTypeBST(PASSWORD_ARRAY);
+		STORAGE_TYPE = 0;
+		storageTypeName = "BST";
+		label3.setText("Selected Data Storage: "+storageTypeName);
+	}//end initBST
+	
+	/* Method that creates a HashTable from current dictionary */
+	public void initHashTable(){
+		init = new InstanceInitializer();	//create a new Initializer
+		PASSWORD_ARRAY = init.stringToPassword(CURRENT_DICTIONARY);
+		init.createStorageTypeHashTable(PASSWORD_ARRAY);
+		STORAGE_TYPE = 1;
+		storageTypeName = "HashTable";
+		label3.setText("Selected Data Storage: "+storageTypeName);
+	}//end initBST
+	
+	
+	/** String Manipulation Methods */
+	
+	/* Method for changing a string with a character */
+	protected static String stringToSelectedChar(int length, char charToFill) {
+		if (length > 0) {
+			char[] array = new char[length];
+			Arrays.fill(array, charToFill);
+			return new String(array);
+		}
+		return "";
+	}//end strinToSelectedChar
+	
+	protected static String mesage(String hiddenPassword, int time, int value, int index){
+		String msg = "";
+		if(value == 1){ //Found in Storage Type
+			msg = ("Searching Dictionary for\n" + hiddenPassword + "\n\n"
+			+ "FOUND IN DICTIONARY ("+ storageTypeName +")\nProcess Took: " + (time) + " nanoseconds\n");
+			if(STORAGE_TYPE == 1){ //if hashTable
+				msg += "at index: ["+index+"]";
+			}
+		}//end found in Storage type
+		
+		return msg;		
+	}
+	
+	public static boolean containsIllegals(String toExamine) {
+		String invalid = " 1234567890~!@#$%^&*()_+=-`[]{};':<>|?,./\\\"";
+		char[] invalidChars = invalid.toCharArray();
+		for(int i = 0; i < toExamine.length(); i++) {
+		    for (int j = 0; j < invalidChars.length; j++) {
+				if(invalidChars[j] == toExamine.charAt(i))
+					return true; //invalid characters
+			}
+		 }
+		return false; //no invalid characters
+	}
+	
+	/** Memory related Methods */
+	
+	/* Dynamic Search In Memory DSIM
+	 * With this implementation it will be able to SIM with any data structure
+	 * with little or no modification at all */
+	public static boolean DSIM(Password userPassword){
+		if (!DYNAMIC_SIM.isEmpty()) {
+			if (DYNAMIC_SIM.contains(userPassword.pwd)) { // found in memory
+				return true;
+			} else { // not found in memory
+				DYNAMIC_SIM.add(userPassword.pwd);
+				return false;
+			}
+		}//end if not empty
+		DYNAMIC_SIM.add(userPassword.pwd);	//add to empty memory
+		return false;
+	}//end DSIM
+	
+	/* Method for writing memory into dictionary */
+	public static void writeMemoryToDict() throws IOException{
+		BufferedWriter writer = null;
+		writer = new BufferedWriter(new FileWriter(currentDictionaryPath, true));
+		for (int j = 0; j < DYNAMIC_SIM.size(); j++){
+			writer.newLine();
+			writer.append(DYNAMIC_SIM.get(j));
+		}
+		writer.close();	//closes the writer to save changes in file
+	}//end writeMemoryToDict
+	
+	/** Printers */
+	 
+	/* Method for creating a scrollable output */
+	public void scrollableOutput(String[] stringArray, List<String> memory){
+		JTextArea textArea = new JTextArea();
+		int printStatus = 0; //0 = no print. 1 = print memory. 2 = print dictionary
+		if(stringArray == null){	//Print Memory
+			for (int j = 0; j < DYNAMIC_SIM.size(); j++)
+				textArea.append(DYNAMIC_SIM.get(j)+"\n");
+			printStatus = 1; //print memory
+		}//end if
+		if(memory == null){
+			for (int i = 0; i < stringArray.length; i++) 
+				textArea.append((stringArray[i])+"\n");
+			printStatus = 2; //print dictionary
+		}//end if
+		JScrollPane scrollPane = new JScrollPane(textArea);
+		textArea.setLineWrap(true);
+		textArea.setWrapStyleWord(true);
+		scrollPane.setPreferredSize(new Dimension(500,500));
+		if(printStatus == 2) { JOptionPane.showMessageDialog(null, scrollPane, currentDictionaryPath, JOptionPane.INFORMATION_MESSAGE);}
+		if(printStatus == 1) { JOptionPane.showMessageDialog(null, scrollPane, "Memory", JOptionPane.INFORMATION_MESSAGE);}
+	}//end scrollableOutput
+
+}//end class
